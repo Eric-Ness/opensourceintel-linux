@@ -41,7 +41,9 @@ fetch amass \
 # Nothing else needs uv's download cache once the tools are in place.
 rm -rf /var/cache/opensourceintel-uv
 
-# 3. Every tool starts (none of these touch the network).
+# 3. Every tool starts (none of these touch the network). They run with a
+# throwaway home of their own, as some write settings there on first start.
+mkdir -p /tmp/osint-check
 for check in \
 	"theHarvester -h" \
 	"maigret --help" \
