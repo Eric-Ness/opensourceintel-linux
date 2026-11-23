@@ -22,6 +22,22 @@ branding:
   wallpaper: assets/wallpaper.png
   logo: assets/logo.png
   accent_color: "#ff7043"
+  splash:   # sources connect to the logo one by one while a timeline fills
+    script: assets/splash/splash.script
+    images:
+      - assets/splash/field.png
+      - assets/splash/state-0.png
+      - assets/splash/state-1.png
+      - assets/splash/state-2.png
+      - assets/splash/state-3.png
+      - assets/splash/state-4.png
+      - assets/splash/state-5.png
+      - assets/splash/state-6.png
+      - assets/splash/state-7.png
+      - assets/splash/state-8.png
+      - assets/splash/axis.png
+      - assets/splash/bar-off.png
+      - assets/splash/bar-on.png
 settings:
   timezone: Etc/UTC
   hostname: osint
