@@ -21,7 +21,7 @@ flathub:
 branding:
   wallpaper: assets/wallpaper.png
   logo: assets/logo.png
-  accent_color: "#1f7a6d"
+  accent_color: "#ff7043"
 settings:
   timezone: Etc/UTC
   hostname: osint
