@@ -9,7 +9,7 @@
 # screen can change size partway through the boot (when the graphics driver
 # takes over from the firmware's), so it is all laid out again when it does.
 # Functions set shared values through global. (a plain name would be local).
-# Nothing moves on its own: images change only when the boot reports progress,
+# Images change at most twice a second, as time passes or the boot reports progress,
 # which keeps the splash light on slow PCs and virtual machines.
 
 Window.SetBackgroundTopColor(0.086, 0.290, 0.439);
@@ -166,23 +166,54 @@ fun layout() {
 }
 layout();
 
-fun refresh_callback() {
-    if (Window.GetWidth() != sw || Window.GetHeight() != sh) layout();
-}
-Plymouth.SetRefreshFunction(refresh_callback);
-
-fun progress_callback(duration, progress) {
-    n = Math.Int(progress * 8);
-    if (n > 8) n = 8;
+# How far along to show, from 0 to 1. The eighth source ("8 sources agree")
+# waits for the very end, when Plymouth hands over to the desktop.
+fun advance(p) {
+    if (p > 1) p = 1;
+    n = Math.Int(p * 8);
+    if (n > 7 && p < 1) n = 7;
     if (n > shown_state) show_state(n);
-    want = Math.Int(progress * bars);
-    if (want > bars) want = bars;
+    want = Math.Int(p * bars);
     while (lit < want) {
         show_bar(lit, 1);
         global.lit = lit + 1;
     }
 }
+
+# Plymouth's own progress is an estimate from the last boot's length. A live
+# system has no last boot, so it guesses long and only gets a third of the way
+# before the desktop takes over. So time moves the splash on too, slowing as
+# it goes (half way at 15 s, three quarters at 45 s), and whichever is further
+# along wins. Plymouth calls the refresh function about 50 times a second;
+# the splash looks at the time twice a second.
+ticks = 0;
+half = 0;
+boot_progress = 0;
+fun refresh_callback() {
+    if (Window.GetWidth() != sw || Window.GetHeight() != sh) layout();
+    global.ticks = ticks + 1;
+    global.half = half + 1;
+    if (half >= 25) {
+        global.half = 0;
+        t = ticks / 50;
+        p = Math.Max(t / (t + 15), boot_progress);
+        if (p > 0.95) p = 0.95;
+        advance(p);
+    }
+}
+Plymouth.SetRefreshFunction(refresh_callback);
+
+fun progress_callback(duration, progress) {
+    global.boot_progress = progress;
+}
 Plymouth.SetBootProgressFunction(progress_callback);
+
+# The hand-off to the desktop: everything connected, the whole year in orange.
+# Ubuntu keeps the splash's last frame on screen while the desktop starts.
+fun quit_callback() {
+    advance(1);
+}
+Plymouth.SetQuitFunction(quit_callback);
 
 # Messages (for example a disk check) and password prompts, under the timeline.
 fun message_callback(text) {
