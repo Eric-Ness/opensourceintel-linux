@@ -14,7 +14,7 @@ jobs:
       - name: Install Plymouth and a virtual display
         run: |
           apt-get update -qq
-          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq plymouth plymouth-x11 xvfb x11-apps imagemagick >/dev/null
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq plymouth plymouth-x11 plymouth-label xvfb x11-apps imagemagick gdb >/dev/null
       - name: Install the theme, with debug lines
         run: |
           t=/usr/share/plymouth/themes/osint
@@ -37,7 +37,7 @@ jobs:
           sleep 2
           export DISPLAY=:99
           mkdir -p frames
-          plymouthd --no-daemon --debug --debug-file=/tmp/plymouth.log --kernel-command-line="quiet splash plymouth.ignore-serial-consoles plymouth.ignore-udev" >/tmp/plymouthd.out 2>&1 &
+          gdb -q -batch -ex run -ex bt -ex "info sharedlibrary" --args plymouthd --no-daemon --debug --debug-file=/tmp/plymouth.log --kernel-command-line="quiet splash plymouth.ignore-serial-consoles plymouth.ignore-udev" >/tmp/plymouthd.out 2>&1 &
           pid=$!
           sleep 2
           plymouth show-splash; echo "show-splash: $?"
@@ -50,7 +50,7 @@ jobs:
           sleep 2
           xwd -root -silent | convert xwd:- frames/quit.png
           wait $pid; echo "plymouthd exit: $?"
-          tail -30 /tmp/plymouthd.out
+          grep -v '^\[' /tmp/plymouthd.out | grep -A25 -m1 'SIGSEGV\|signal' ; grep '^#' /tmp/plymouthd.out | head -30
           grep -E 'Debug|script|tick |progress ' /tmp/plymouth.log | tail -120 > debug-lines.txt
           cp /tmp/plymouth.log /tmp/plymouthd.out frames/
           tail -40 /tmp/plymouth.log | cut -c1-160
