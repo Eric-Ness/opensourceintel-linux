@@ -30,24 +30,31 @@ jobs:
           printf '[Daemon]\nTheme=osint\n' > /etc/plymouth/plymouthd.conf
           ln -sf $t/osint.plymouth /usr/share/plymouth/themes/default.plymouth
       - name: Run the splash
+        shell: bash
         run: |
+          set +e
           Xvfb :99 -screen 0 1280x800x24 >/dev/null 2>&1 &
           sleep 2
           export DISPLAY=:99
           mkdir -p frames
-          plymouthd --no-daemon --debug --debug-file=/tmp/plymouth.log --kernel-command-line="quiet splash plymouth.ignore-serial-consoles plymouth.ignore-udev" &
+          plymouthd --no-daemon --debug --debug-file=/tmp/plymouth.log --kernel-command-line="quiet splash plymouth.ignore-serial-consoles plymouth.ignore-udev" >/tmp/plymouthd.out 2>&1 &
+          pid=$!
           sleep 2
-          plymouth show-splash
+          plymouth show-splash; echo "show-splash: $?"
           for i in $(seq 1 35); do
             sleep 2
+            kill -0 $pid 2>/dev/null || { echo "plymouthd gone after $((i*2)) s"; break; }
             xwd -root -silent | convert xwd:- "frames/f$(printf %03d $((i*2))).png"
           done
-          plymouth quit --retain-splash
+          plymouth quit --retain-splash; echo "quit: $?"
           sleep 2
           xwd -root -silent | convert xwd:- frames/quit.png
-          grep -E 'Debug|script|tick |progress ' /tmp/plymouth.log | tail -120 > debug-lines.txt || true
-          cp /tmp/plymouth.log frames/ || true
-          tail -60 debug-lines.txt
+          wait $pid; echo "plymouthd exit: $?"
+          tail -30 /tmp/plymouthd.out
+          grep -E 'Debug|script|tick |progress ' /tmp/plymouth.log | tail -120 > debug-lines.txt
+          cp /tmp/plymouth.log /tmp/plymouthd.out frames/
+          tail -40 /tmp/plymouth.log | cut -c1-160
+          exit 0
       - uses: actions/upload-artifact@v4
         if: always()
         with:
