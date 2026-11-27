@@ -8,7 +8,7 @@ on:
 jobs:
   splash:
     runs-on: ubuntu-24.04
-    container: public.ecr.aws/docker/library/ubuntu:26.04
+    container: ubuntu:26.04
     steps:
       - uses: actions/checkout@v5
       - name: Install Plymouth and a virtual display
