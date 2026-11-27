@@ -45,6 +45,8 @@ jobs:
             sleep 2
             kill -0 $pid 2>/dev/null || { echo "plymouthd gone after $((i*2)) s"; break; }
             xwd -root -silent | convert xwd:- "frames/f$(printf %03d $((i*2))).png"
+            # As GDM does while it starts: Plymouth stops drawing until it quits.
+            [ $i = 15 ] && { plymouth deactivate; echo "deactivated at $((i*2)) s"; }
           done
           plymouth quit --retain-splash; echo "quit: $?"
           sleep 2
