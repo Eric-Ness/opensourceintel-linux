@@ -27,9 +27,7 @@ jobs:
           grep -n 'Debug(' $t/osint.script
           printf '[Plymouth Theme]\nName=osint\nModuleName=script\n\n[script]\nImageDir=%s\nScriptFile=%s/osint.script\n' $t $t > $t/osint.plymouth
           mkdir -p /etc/plymouth
-          printf '[Daemon]
-Theme=osint
-' > /etc/plymouth/plymouthd.conf
+          printf '[Daemon]\nTheme=osint\n' > /etc/plymouth/plymouthd.conf
           ln -sf $t/osint.plymouth /usr/share/plymouth/themes/default.plymouth
       - name: Run the splash
         run: |
