@@ -1,0 +1,55 @@
+# Runs the boot splash in Plymouth (Ubuntu 26.04's, with its X11 renderer on a
+# virtual display) for 70 seconds, then quits it, keeping a frame every 2 s and
+# Plymouth's debug log, with the script's clock and progress written into it.
+name: splash-test
+on:
+  push:
+    branches: [splash-harness]
+jobs:
+  splash:
+    runs-on: ubuntu-24.04
+    container: public.ecr.aws/docker/library/ubuntu:26.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Plymouth and a virtual display
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq plymouth plymouth-x11 xvfb x11-apps imagemagick >/dev/null
+      - name: Install the theme, with debug lines
+        run: |
+          t=/usr/share/plymouth/themes/osint
+          mkdir -p $t
+          cp assets/splash/*.png $t/
+          cp assets/logo.png $t/watermark.png
+          # Log the clock, Plymouth's progress and what is shown, twice a second.
+          sed 's|^        advance(p);|        Debug("tick " + ticks + " t " + t + " bp " + boot_progress + " p " + p + " shown " + shown_state + " lit " + lit);\n        advance(p);|' assets/splash/splash.script > $t/osint.script
+          sed -i 's|^    global.boot_progress = progress;|    global.boot_progress = progress;\n    Debug("progress " + progress);|' $t/osint.script
+          grep -n 'Debug(' $t/osint.script
+          printf '[Plymouth Theme]\nName=osint\nModuleName=script\n\n[script]\nImageDir=%s\nScriptFile=%s/osint.script\n' $t $t > $t/osint.plymouth
+          plymouth-set-default-theme osint
+      - name: Run the splash
+        run: |
+          Xvfb :99 -screen 0 1280x800x24 >/dev/null 2>&1 &
+          sleep 2
+          export DISPLAY=:99
+          mkdir -p frames
+          plymouthd --no-daemon --debug --debug-file=/tmp/plymouth.log --kernel-command-line="quiet splash" &
+          sleep 2
+          plymouth show-splash
+          for i in $(seq 1 35); do
+            sleep 2
+            xwd -root -silent | convert xwd:- "frames/f$(printf %03d $((i*2))).png"
+          done
+          plymouth quit --retain-splash
+          sleep 2
+          xwd -root -silent | convert xwd:- frames/quit.png
+          grep -E 'Debug|script|tick |progress ' /tmp/plymouth.log | tail -120 > debug-lines.txt || true
+          cp /tmp/plymouth.log frames/ || true
+          tail -60 debug-lines.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: splash-frames
+          path: |
+            frames/
+            debug-lines.txt
