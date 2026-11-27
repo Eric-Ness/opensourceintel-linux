@@ -35,7 +35,7 @@ jobs:
           sleep 2
           export DISPLAY=:99
           mkdir -p frames
-          plymouthd --no-daemon --debug --debug-file=/tmp/plymouth.log --kernel-command-line="quiet splash" &
+          plymouthd --no-daemon --debug --debug-file=/tmp/plymouth.log --kernel-command-line="quiet splash plymouth.ignore-serial-consoles plymouth.ignore-udev" &
           sleep 2
           plymouth show-splash
           for i in $(seq 1 35); do
