@@ -26,7 +26,11 @@ jobs:
           sed -i 's|^    global.boot_progress = progress;|    global.boot_progress = progress;\n    Debug("progress " + progress);|' $t/osint.script
           grep -n 'Debug(' $t/osint.script
           printf '[Plymouth Theme]\nName=osint\nModuleName=script\n\n[script]\nImageDir=%s\nScriptFile=%s/osint.script\n' $t $t > $t/osint.plymouth
-          plymouth-set-default-theme osint
+          mkdir -p /etc/plymouth
+          printf '[Daemon]
+Theme=osint
+' > /etc/plymouth/plymouthd.conf
+          ln -sf $t/osint.plymouth /usr/share/plymouth/themes/default.plymouth
       - name: Run the splash
         run: |
           Xvfb :99 -screen 0 1280x800x24 >/dev/null 2>&1 &
